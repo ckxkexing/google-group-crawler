@@ -58,6 +58,7 @@
 #
 #   Rss link contains link to topic. That's great.
 #
+# 在我的mac上可以成功运行的版本
 
 _short_url() {
   printf '%s\n' "${*//https:\/\/groups.google.com${_ORG:+\/a\/$_ORG}\/forum\/\?_escaped_fragment_=/}"
@@ -65,13 +66,19 @@ _short_url() {
 
 _links_dump() {
   # shellcheck disable=2086
+  echo >&2 "???????"
+  echo >&2 $_CURL_OPTIONS
+
   curl \
     --user-agent "$_USER_AGENT" \
     $_CURL_OPTIONS \
     -Lso- "$@" \
+    -x 127.0.0.1:4780 \
   | sed -e "s#['\"]#\\"$'\n#g' \
   | grep -E '^https?://' \
   | sort -u
+
+  echo >&2 "???????!!!"
 }
 
 # $1: output file [/path/to/directory/prefix]
@@ -182,8 +189,14 @@ _main() {
   | sort -u \
   | sed -e 's#/d/msg/#/forum/message/raw?msg=#g' \
   | while read -r _url; do
+      echo >&2 $_url
       _id="$(echo "$_url"| sed -e "s#.*=$_GROUP/##g" -e 's#/#.#g')"
-      echo "__curl__ \"$_D_OUTPUT/mbox/m.${_id}\" \"$_url\""
+      echo >&2 $_url
+      #################
+      # echo >&2 "__curl__ \"$_D_OUTPUT/mbox/m.${_id}\" \"$_url\""
+      __curl__ "$_D_OUTPUT/mbox/m.${_id}" "$_url"
+      #################
+
     done
 }
 
@@ -219,9 +232,11 @@ __curl__() {
   if [[ ! -f "$1" ]]; then
     >&2 echo ":: Downloading '$1'..."
     # shellcheck disable=2086
+
     curl -Ls \
       -A "$_USER_AGENT" \
       $_CURL_OPTIONS \
+      -x 127.0.0.1:4780 \
       "$2" -o "$1"
     __curl_hook "$1" "$2"
   else
@@ -302,7 +317,8 @@ _ORG="${_ORG:-}"
 _GROUP="${_GROUP:-}"
 _D_OUTPUT="${_D_OUTPUT:-./${_ORG:+${_ORG}-}${_GROUP}/}"
 # _GROUP="${_GROUP//+/%2B}"
-_USER_AGENT="${_USER_AGENT:-Mozilla/5.0 (X11; Linux x86_64; rv:74.0) Gecko/20100101 Firefox/74.0}"
+
+_USER_AGENT="${_USER_AGENT:-Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.85 Mobile Safari/537.36}"
 _CURL_OPTIONS="${_CURL_OPTIONS:-}"
 _RSS_NUM="${_RSS_NUM:-50}"
 
